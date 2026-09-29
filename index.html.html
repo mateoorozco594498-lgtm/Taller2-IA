@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Simuladores de IA: Minimax/Alfa-Beta y CSP</title>
+<style>
+:root{--bg:#f4f6fb;--cd:#fff;--tx:#1b2033;--mu:#5d667f;--bo:#d5d9e8;--mx:#2f6fed;--mxf:#e2ebff;--mn:#d9480f;--mnf:#ffe8da;--cu:#f0a800;--ok:#178a4b;--okf:#dcf5e6;--ng:#d62839;--ngf:#fde0e3;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1220;--cd:#181c2e;--tx:#e8ebf7;--mu:#9aa3c0;--bo:#2c3350;--mx:#6ea0ff;--mxf:#1b2a52;--mn:#ff9a62;--mnf:#4a2a17;--cu:#ffc93c;--ok:#3ecf8e;--okf:#12362a;--ng:#ff6b7a;--ngf:#451c25}}
+:root[data-theme="dark"]{--bg:#0f1220;--cd:#181c2e;--tx:#e8ebf7;--mu:#9aa3c0;--bo:#2c3350;--mx:#6ea0ff;--mxf:#1b2a52;--mn:#ff9a62;--mnf:#4a2a17;--cu:#ffc93c;--ok:#3ecf8e;--okf:#12362a;--ng:#ff6b7a;--ngf:#451c25}
+*{box-sizing:border-box}[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header,main{max-width:1200px;margin:auto;padding:12px 14px}header{padding-bottom:0}
+h1{font-size:1.2rem;margin:0 0 10px}h3{margin:0 0 8px;font-size:.95rem}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+select,input,button{font:inherit;padding:6px 9px;border-radius:8px;border:1px solid var(--bo);background:var(--cd);color:var(--tx)}
+button{cursor:pointer}.tabs .on,.p{background:var(--mx);color:var(--bg);border-color:var(--mx);font-weight:600}
+.card{background:var(--cd);border:1px solid var(--bo);border-radius:12px;padding:12px;margin-bottom:12px}
+.ctl{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:end}
+.ctl label{display:flex;flex-direction:column;font-size:.78rem;color:var(--mu);gap:3px}
+.ctl input[type=range]{padding:0;width:120px}
+.sw{flex-direction:row!important;align-items:center;gap:8px!important;font-size:.9rem!important;color:var(--tx)!important}
+.sw input{appearance:none;width:44px;height:24px;padding:0;border-radius:12px;background:var(--bo);position:relative;cursor:pointer;border:0}
+.sw input::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s}
+.sw input:checked{background:var(--ok)}.sw input:checked::after{left:23px}
+.err{color:var(--ng);font-size:.85rem}
+.leg{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.82rem;color:var(--mu);margin-bottom:8px}
+.leg i{display:inline-block;width:18px;height:12px;border:2px solid;vertical-align:-1px;margin-right:5px;border-radius:3px}
+.tree{overflow:auto;max-height:68vh;border:1px solid var(--bo);border-radius:10px}
+svg{display:block}svg text{text-anchor:middle;fill:var(--tx);font-size:12px}
+.sm{font-size:9.5px!important;fill:var(--mu)!important}.b{font-weight:700;font-size:12.5px!important}.ab{font-size:10px!important;fill:var(--mu)!important}
+.el{font-size:10px!important;fill:var(--mu)!important;paint-order:stroke;stroke:var(--cd);stroke-width:3px}.x{font-size:16px!important}.bk{fill:var(--cu)!important;font-weight:700}
+.ed{stroke:var(--mu);stroke-width:1.5;fill:none}.ed.bs{stroke:var(--ok);stroke-width:4}
+.nx{fill:var(--mxf);stroke:var(--mx);stroke-width:2}.nx.mn{fill:var(--mnf);stroke:var(--mn)}
+.nx.cs{fill:var(--cd);stroke:var(--bo)}.nx.ok{fill:var(--okf);stroke:var(--ok)}.nx.sol{fill:var(--okf);stroke:var(--ok);stroke-width:4}.nx.bad{fill:var(--ngf);stroke:var(--ng)}
+.nx.bs{stroke:var(--ok);stroke-width:4}.nx.cur{stroke:var(--cu);stroke-width:4}
+.dim{opacity:.3}.pr{opacity:.6}.pr .nx{stroke-dasharray:4 3;fill:var(--bo);stroke:var(--mu)}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(270px,1fr))}.grid .card{margin:0}.wide{grid-column:1/-1}
+.msg{margin:0;padding:8px 10px;border-left:4px solid var(--mx);background:var(--bg);border-radius:6px;min-height:3.4em}
+.msg.p,.msg.b{border-color:var(--cu)}.msg.x{border-color:var(--ng)}.msg.o,.msg.e{border-color:var(--ok)}
+.log{margin:0;padding-left:24px;max-height:210px;overflow:auto;font-size:.84rem}.log li{color:var(--mu);margin:2px 0}.log .last{color:var(--tx);font-weight:600}
+.row{display:flex;align-items:center;flex-wrap:wrap;padding:4px 0}.row b{width:58px}.row small{margin-left:auto;color:var(--mu)}
+.chip{display:inline-block;min-width:38px;text-align:center;padding:2px 8px;margin:2px 4px;border-radius:14px;border:1px solid var(--bo);font-weight:600}
+.chip.rm{text-decoration:line-through;opacity:.5;background:var(--ngf)}.chip.as{background:var(--ok);color:var(--bg);border-color:var(--ok)}.chip.off{opacity:.4}.chip.try{background:var(--cu);color:#1b1400;border-color:var(--cu)}
+ul,ol{margin:0;padding-left:20px}#cr li.on{color:var(--ng)}
+</style></head><body>
+<header><h1>Simuladores de IA · Búsqueda adversaria y CSP</h1>
+<div class="tabs"><button class="on" data-t="s1">1 · Nim: Minimax y Poda α-β</button><button data-t="s2">2 · CSP: asignación de tareas</button></div></header>
+<main>
+<section id="s1">
+<div class="card"><div class="ctl">
+<label>Algoritmo<select id="na"><option value="mm">Minimax puro</option><option value="ab">Poda Alfa-Beta</option></select></label>
+<label>Estado inicial<input id="ns" value="1,3" size="8"></label>
+<label>Empieza<select id="nt"><option>MAX</option><option>MIN</option></select></label>
+<label>Vista<select id="nvw"><option value="x">Mostrar nodos al explorarlos</option><option value="all">Mostrar árbol completo</option></select></label>
+<label>Velocidad<input type="range" id="nsp" min="1" max="5" value="3"></label>
+<button class="p" id="ngo">▶ Auto</button><button id="nst">Paso ›</button><button id="nrs">↺ Reiniciar</button></div>
+<div id="nerr" class="err"></div></div>
+<div class="card"><div class="leg"><span><i style="background:var(--mxf);border-color:var(--mx)"></i>Nodo MAX</span><span><i style="background:var(--mnf);border-color:var(--mn);border-radius:8px"></i>Nodo MIN</span><span><i style="border-color:var(--cu);border-width:4px"></i>Nodo en evaluación</span><span>❌ Rama podada</span><span><i style="border-color:var(--ok);border-width:4px"></i>Mejor jugada de MAX</span></div><div class="tree" id="ntree"></div></div>
+<div class="grid"><div class="card"><h3>Qué está pasando</h3><p class="msg" id="nm"></p></div><div class="card"><h3>Resultado</h3><div id="nr"></div></div><div class="card"><h3>Historial</h3><ol class="log" id="nl"></ol></div></div>
+</section>
+<section id="s2" hidden>
+<div class="card"><div class="ctl">
+<label class="sw"><input type="checkbox" id="cx">Restricción adicional: Carlos ≠ T3</label>
+<label>Vista<select id="cvw"><option value="x">Mostrar nodos al explorarlos</option><option value="all">Mostrar árbol completo</option></select></label>
+<label>Velocidad<input type="range" id="csp" min="1" max="5" value="3"></label>
+<button class="p" id="cgo">▶ Auto</button><button id="cst">Paso ›</button><button id="crs">↺ Reiniciar</button></div></div>
+<div class="card"><div class="leg"><span><i style="border-color:var(--cu);border-width:4px"></i>Nodo en evaluación</span><span><i style="background:var(--okf);border-color:var(--ok)"></i>Asignación válida</span><span>❌ Rama inválida</span><span>✔ Solución completada</span><span><b style="color:var(--cu)">↩</b> Retroceso (backtracking)</span></div><div class="tree" id="ctree"></div></div>
+<div class="grid"><div class="card"><h3>Variables y dominios</h3><div id="cd"></div></div><div class="card"><h3>Restricciones</h3><ul id="cr"></ul></div><div class="card"><h3>Qué está pasando</h3><p class="msg" id="cm"></p></div><div class="card"><h3>Resultados</h3><div id="cs"></div></div><div class="card wide"><h3>Historial</h3><ol class="log" id="cl"></ol></div></div>
+</section>
+</main>
+<script>
+const $=s=>document.querySelector(s),SP=[1800,1100,650,320,120],V=['Ana','Luis','Carlos'];
+const F=v=>v===1/0?'+∞':v===-1/0?'−∞':v>0?'+'+v:v<0?'−'+-v:'0',fa=a=>V.map(v=>`${v} → ${a[v]}`).join(', ');
+function lay(r,dx,dy){let x=0,m=0;(function g(n,d){n.d=d;m=Math.max(m,d);n.y=d*dy;if(n.kids.length){n.kids.forEach(k=>g(k,d+1));n.x=(n.kids[0].x+n.kids[n.kids.length-1].x)/2}else{n.x=x;x+=dx}})(r,0);return{w:x,m}}
+function see(el){const c=el.querySelector('.cur');if(!c)return;const r=c.getBoundingClientRect(),q=el.getBoundingClientRect();if(r.left<q.left||r.right>q.right)el.scrollLeft+=r.left-q.left-q.width/2;if(r.top<q.top||r.bottom>q.bottom)el.scrollTop+=r.top-q.top-q.height/2}
+function lst(el,a){el.innerHTML=a.map((m,i)=>`<li${i==a.length-1?' class="last"':''}>${m}</li>`).join('');el.scrollTop=el.scrollHeight}
+function wire(S,p){let t=null;const b=$('#'+p+'go'),sp=$('#'+p+'sp');
+S.stop=()=>{clearInterval(t);t=null;b.textContent='▶ Auto'};
+S.step=()=>{if(S.i>=S.ev.length)return S.stop();S.apply(S.ev[S.i++]);S.draw();if(S.i>=S.ev.length)S.stop()};
+S.play=()=>{if(!S.ev.length)return;if(S.i>=S.ev.length)S.reset();b.textContent='⏸ Pausa';t=setInterval(S.step,SP[sp.value-1])};
+S.reset=()=>{S.stop();S.i=0;S.init();S.draw()};
+b.onclick=()=>t?S.stop():S.play();$('#'+p+'st').onclick=()=>{S.stop();S.step()};$('#'+p+'rs').onclick=()=>S.reset();
+sp.oninput=()=>{if(t){S.stop();S.play()}};$('#'+p+'vw').onchange=()=>S.draw()}
+
+/* ===== Simulador 1: Nim con Minimax / Poda Alfa-Beta ===== */
+const SN={ev:[],N:[],i:0,
+build(){const s=$('#ns').value.split(/[\s,;]+/).filter(Boolean).map(Number),ab=$('#na').value=='ab',er=$('#nerr'),N=[],ev=[];
+if(!s.length||s.length>3||s.some(x=>!Number.isInteger(x)||x<0||x>9)||!s.some(x=>x))return er.textContent='Estado no válido: usa de 1 a 3 filas con enteros entre 0 y 9 (por ejemplo 1,3).';
+const mk=(st,tu,p,mv)=>{if(N.length>300)throw 0;const n={id:N.length,s:st,tu,p,mv,kids:[]};N.push(n);st.forEach((c,r)=>{for(let k=1;k<=c;k++){const t=st.slice();t[r]-=k;n.kids.push(mk(t,1-tu,n,`F${r+1}−${k}`))}});return n};
+let root;try{root=mk(s,$('#nt').value=='MIN'?1:0,null,'')}catch(e){return er.textContent='El árbol supera 300 nodos: reduce el estado inicial.'}
+er.textContent='';
+const sr=(n,a,b)=>{ev.push({t:'in',id:n.id,a,b});
+if(!n.kids.length){const u=n.tu?1:-1;ev.push({t:'v',id:n.id,v:u,leaf:1});return u}
+let v=n.tu?1/0:-1/0;
+for(let i=0;i<n.kids.length;i++){const c=n.kids[i],r=sr(c,a,b);
+if(n.tu?r<v:r>v){v=r;n.best=c.id}
+if(ab){if(n.tu)b=Math.min(b,v);else a=Math.max(a,v)}
+ev.push({t:'v',id:n.id,v,a,b,c:c.id});
+if(ab&&a>=b){if(i<n.kids.length-1)ev.push({t:'p',id:n.id,ids:n.kids.slice(i+1).map(k=>k.id),a,b});break}}
+return v};
+const rv=sr(root,-1/0,1/0);ev.push({t:'e',id:0,v:rv});
+Object.assign(this,{N,ev,ab,L:lay(root,88,108)});this.reset()},
+init(){this.N.forEach(n=>{n.vis=n.cur=n.pr=n.bs=0;n.v=n.a=n.b=null});this.st={vis:0,pr:0};this.cu=null;this.lg=[];this.k='';this.fin=0;
+this.m='Pulsa «Paso» o «Auto». Recorrido en profundidad, de izquierda a derecha: primero la fila 1 y luego la fila 2, retirando 1, 2, 3… objetos.'},
+apply(e){const N=this.N,ab=this.ab,st=this.st,n=N[e.id],nm=x=>`[${x.s.join(', ')}]`,pl=x=>x.tu?'MIN':'MAX';
+this.cu&&(this.cu.cur=0);this.cu=e.t=='e'?null:n;this.cu&&(this.cu.cur=1);
+if(e.t=='in'){n.vis=1;n.a=e.a;n.b=e.b;st.vis++;this.m=`Explora ${nm(n)} (turno de ${pl(n)})${ab?` con α=${F(e.a)}, β=${F(e.b)}`:''}.`}
+else if(e.t=='v'){n.v=e.v;if(ab&&!e.leaf){n.a=e.a;n.b=e.b}
+this.m=e.leaf?`${nm(n)} es terminal: ${n.tu?'MAX':'MIN'} retiró el último objeto → utilidad ${F(e.v)}.`:`${pl(n)} actualiza ${nm(n)} con el valor de ${nm(N[e.c])}: valor = ${F(e.v)}${ab?`, α=${F(e.a)}, β=${F(e.b)}`:''}.`}
+else if(e.t=='p'){e.ids.forEach(i=>{N[i].pr=1;(function z(x){x.kids.forEach(k=>{k.pr=2;z(k)})})(N[i])});st.pr+=e.ids.length;
+this.m=`✂ Poda: α=${F(e.a)} ≥ β=${F(e.b)}; se descartan ${e.ids.length} rama(s) restante(s) de ${nm(n)} ❌.`}
+else{N.forEach(x=>{if(x.vis&&!x.tu&&x.best!=null)N[x.best].bs=1});const r=N[0];
+this.fin=1;this.m=`Fin. Valor de la raíz = ${F(e.v)}: con juego óptimo gana ${e.v>0?'MAX':'MIN'}. `+(r.tu?'Las mejores jugadas de MAX se marcan en verde.':`Mejor jugada de MAX: ${N[r.best].mv} → ${nm(N[r.best])}.`)}
+this.k=e.t;this.lg.push(this.m)},
+draw(){const{N,ab,L,st}=this,full=$('#nvw').value=='all',W=L.w+16,H=L.m*108+90;let e='',g='';
+N.forEach(n=>{if(!(full||n.vis||n.pr==1))return;const cx=n.x+48,cy=n.y+34,c=(n.vis||n.pr==1?'':' dim')+(n.pr?' pr':'');
+if(n.p){const px=n.p.x+48,py=n.p.y+34;e+=`<g class="${c}"><path class="ed${n.bs?' bs':''}" d="M${px} ${py+22}L${cx} ${cy-22}"/><text class="el" x="${(px+cx)/2}" y="${(py+cy)/2+3}">${n.mv}</text></g>`}
+g+=`<g class="${c}"><rect class="nx${n.tu?' mn':''}${n.cur?' cur':''}${n.bs?' bs':''}" x="${cx-40}" y="${cy-22}" width="80" height="44" rx="${n.tu?22:5}"/><text class="sm" x="${cx}" y="${cy-10}">${n.tu?'MIN':'MAX'}</text><text class="b" x="${cx}" y="${cy+4}">[${n.s.join(',')}]</text><text class="sm" x="${cx}" y="${cy+17}">${n.v!=null?'v = '+F(n.v):n.vis?'…':''}</text>${ab&&n.vis?`<text class="ab" x="${cx}" y="${cy+36}">α=${F(n.a)} β=${F(n.b)}</text>`:''}</g>${n.pr==1?`<text class="x" x="${cx+34}" y="${cy-12}">❌</text>`:''}`});
+$('#ntree').innerHTML=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${e+g}</svg>`;
+$('#nm').textContent=this.m;$('#nm').className='msg '+this.k;
+$('#nr').innerHTML=`Nodos explorados: <b>${st.vis}</b> de ${N.length}<br>Ramas podadas: <b>${st.pr}</b>${this.fin?`<br>Valor de la raíz: <b>${F(N[0].v)}</b>`:''}`;
+lst($('#nl'),this.lg);see($('#ntree'))}};
+
+/* ===== Simulador 2: CSP (backtracking + forward checking) ===== */
+const SC={ev:[],N:[],i:0,
+build(){const ex=$('#cx').checked,O={Ana:['T1','T2'],Luis:['T1','T3'],Carlos:['T2','T3']},B={Ana:O.Ana,Luis:O.Luis,Carlos:ex?['T2']:O.Carlos},N=[],ev=[],sols=[];
+const mk=(p,l,dom,asg)=>{const n={id:N.length,p,kids:[],l,dom,asg,st:''};N.push(n);p&&p.kids.push(n);return n};
+const root=mk(null,'Inicio',B,{});
+ev.push({k:'s',id:0,m:`Inicio con los dominios iniciales${ex?'; la restricción Carlos ≠ T3 elimina T3 del dominio de Carlos':''}. Orden de variables: Ana → Luis → Carlos; valores: T1 → T2 → T3.`,dom:B,asg:{}});
+const bt=(n,i)=>{const v=V[i];
+for(const t of n.dom[v]){const dom={};V.forEach(x=>dom[x]=n.dom[x].slice());dom[v]=[t];
+const asg={...n.asg,[v]:t},c=mk(n,`${v} = ${t}`,dom,asg),rm=[];let z=null;
+ev.push({k:'t',id:c.id,m:`Se prueba ${v} = ${t}.`,dom:n.dom,asg:n.asg,tr:[v,t]});
+for(let j=i+1;j<3;j++){const w=V[j];if(dom[w].includes(t)){dom[w]=dom[w].filter(x=>x!=t);rm.push(w)}if(!dom[w].length&&!z)z=w}
+const rs=rm.length?`Se elimina ${t} de los dominios de ${rm.join(' y ')}. `:'',bk=m=>ev.push({k:'b',id:c.id,to:n.id,m,dom:n.dom,asg:n.asg});
+if(z){c.st='bad';ev.push({k:'x',id:c.id,m:`${rs}${z} se queda sin valores posibles → ❌ rama inválida.`,dom,asg});bk(`↩ Retroceso: se deshace ${v} = ${t} y se restauran los dominios.`)}
+else if(i==2){c.st='sol';sols.push(asg);ev.push({k:'o',id:c.id,m:`✔ Solución ${sols.length}: ${fa(asg)}.`,dom,asg,sol:asg});bk(`↩ Retroceso para buscar más soluciones: se deshace ${v} = ${t}.`)}
+else{c.st='ok';ev.push({k:'r',id:c.id,m:`${rs}Asignación válida; se continúa con ${V[i+1]}.`,dom,asg});bt(c,i+1)}}
+const q=n.p;ev.push({k:'b',id:n.id,to:q?q.id:0,m:q?`${v} no tiene más valores por probar → ↩ retroceso: se deshace ${n.l} y se vuelve a ${V[i-1]}.`:`${v} no tiene más valores por probar: la búsqueda termina.`,dom:q?q.dom:n.dom,asg:q?q.asg:n.asg})};
+bt(root,0);
+ev.push({k:'e',id:0,m:`Fin de la búsqueda: ${sols.length} solución(es)${sols.length?': '+sols.map(fa).join(' | '):''}.`,dom:B,asg:{}});
+$('#cr').innerHTML=`<li>Cada empleado realiza una sola tarea.</li><li>Cada tarea se asigna a una sola persona (todas distintas): al asignar una tarea se elimina de los dominios de las variables restantes.</li><li>Dominios: Ana {T1, T2}, Luis {T1, T3}, Carlos {T2, T3}.</li><li class="${ex?'on':''}">Carlos ≠ T3: <b>${ex?'activa':'inactiva'}</b>.</li>`;
+Object.assign(this,{N,ev,O,L:lay(root,172,104)});this.reset()},
+init(){this.N.forEach(n=>{n.vis=n.cur=n.bk=n.rd=0});this.N[0].vis=this.N[0].rd=1;this.cu=null;this.lg=[];this.so=[];this.k='';this.fin=0;this.tr=null;this.dom=this.N[0].dom;this.asg={};
+this.m='Pulsa «Paso» o «Auto» para empezar.'},
+apply(e){const N=this.N,n=N[e.id];this.cu&&(this.cu.cur=0);
+if(e.k=='b'){n.bk=1;this.cu=N[e.to]}else this.cu=e.k=='e'?null:n;this.cu&&(this.cu.cur=1);
+if(e.k=='t')n.vis=1;if('xro'.includes(e.k))n.rd=1;if(e.sol)this.so.push(e.sol);
+Object.assign(this,{m:e.m,k:e.k,dom:e.dom,asg:e.asg,tr:e.tr||null,fin:e.k=='e'?1:0});this.lg.push(e.m)},
+draw(){const{N,L}=this,full=$('#cvw').value=='all',W=L.w+16,H=L.m*104+70;let e='',g='';
+N.forEach(n=>{if(!(full||n.vis))return;const cx=n.x+90,cy=n.y+34,c=n.vis?'':' dim',s=n.vis&&n.rd?n.st:'';
+if(n.p)e+=`<path class="ed ${c}" d="M${n.p.x+90} ${n.p.y+61}L${cx} ${cy-27}"/>`;
+g+=`<g class="${c}"><rect class="nx cs ${s}${n.cur?' cur':''}" x="${cx-80}" y="${cy-27}" width="160" height="54" rx="8"/><text class="b" x="${cx}" y="${cy-6}">${n.l}</text><text class="sm" x="${cx}" y="${cy+12}">${!n.vis?'':!n.rd?'evaluando…':n.d<3?V.slice(n.d).map(w=>`${w[0]}{${n.dom[w].join(',')}}`).join(' '):'asignación completa'}</text></g>${s=='bad'?`<text class="x" x="${cx+70}" y="${cy-14}">❌</text>`:''}${s=='sol'?`<text class="x" x="${cx+70}" y="${cy-14}">✔</text>`:''}${n.bk?`<text class="x bk" x="${cx-70}" y="${cy-14}">↩</text>`:''}`});
+$('#ctree').innerHTML=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${e+g}</svg>`;
+$('#cd').innerHTML=V.map(v=>{const a=this.asg[v];return `<div class="row"><b>${v}</b>${this.O[v].map(t=>{let c=a?(a==t?'as':'off'):this.dom[v].includes(t)?'':'rm';if(this.tr&&this.tr[0]==v&&this.tr[1]==t)c='try';return `<span class="chip ${c}">${t}</span>`}).join('')}<small>${a?'asignada':'pendiente'}</small></div>`}).join('');
+$('#cm').textContent=this.m;$('#cm').className='msg '+this.k;
+$('#cs').innerHTML=`Soluciones encontradas: <b>${this.so.length}</b>${this.fin?' (total)':''}<ol>${this.so.map(s=>`<li>${fa(s)}</li>`).join('')}</ol>`;
+lst($('#cl'),this.lg);see($('#ctree'))}};
+
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x==b));['s1','s2'].forEach(i=>$('#'+i).hidden=i!=b.dataset.t);SN.stop();SC.stop()});
+wire(SN,'n');wire(SC,'c');
+['#na','#ns','#nt'].forEach(s=>$(s).onchange=()=>SN.build());$('#cx').onchange=()=>SC.build();
+SN.build();SC.build();
+</script></body></html>
